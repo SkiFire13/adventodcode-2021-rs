@@ -9,15 +9,13 @@ pub enum Instruction {
 }
 
 pub fn input_generator(input: &str) -> Input {
-	input.lines()
-        .map(|line| {
-            if line.starts_with("forward") {
-                Instruction::Forward(line[8..].parse().unwrap())
-            } else if line.starts_with("down ") {
-                Instruction::Down(line[5..].parse().unwrap())
-            } else {
-                Instruction::Up(line[3..].parse().unwrap())
-            }
+	input
+        .lines()
+        .map(|line| match line.split_once(' ') {
+            Some(("forward", rest)) => Instruction::Forward(rest.parse().expect("Invalid input")),
+            Some(("down", rest)) => Instruction::Down(rest.parse().expect("Invalid input")),
+            Some(("up", rest)) => Instruction::Up(rest.parse().expect("Invalid input")),
+            _ => panic!("Invalid input")
         })
         .collect()
 }
