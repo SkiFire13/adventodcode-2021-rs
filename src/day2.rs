@@ -9,19 +9,19 @@ pub enum Instruction {
 }
 
 pub fn input_generator(input: &str) -> Input {
-	input
+    input
         .lines()
         .map(|line| match line.split_once(' ') {
             Some(("forward", rest)) => Instruction::Forward(rest.parse().expect("Invalid input")),
             Some(("down", rest)) => Instruction::Down(rest.parse().expect("Invalid input")),
             Some(("up", rest)) => Instruction::Up(rest.parse().expect("Invalid input")),
-            _ => panic!("Invalid input")
+            _ => panic!("Invalid input"),
         })
         .collect()
 }
 
 pub fn part1(input: &Input) -> u32 {
-	let mut hor = 0;
+    let mut hor = 0;
     let mut depth = 0;
     for instr in input {
         match instr {
@@ -34,7 +34,7 @@ pub fn part1(input: &Input) -> u32 {
 }
 
 pub fn part2(input: &Input) -> u32 {
-	let mut hor = 0;
+    let mut hor = 0;
     let mut aim = 0;
     let mut depth = 0;
     for instr in input {
