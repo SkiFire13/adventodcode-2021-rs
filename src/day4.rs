@@ -3,103 +3,76 @@ use super::prelude::*;
 type Input = Game;
 
 pub struct Game {
-    numbers: Vec<u8>,
-    grids: HashMap<(u8, u8, u8), u8>,
+    /// num (index in num_turn) -> turn (turn when num is picked)
+    num_turn: Vec<u8>,
+    grids: Vec<[[u8; 5]; 5]>,
 }
 
 pub fn input_generator(input: &str) -> Input {
-    let mut lines = input.split("\n\n");
-    let numbers = lines
-        .next()
-        .unwrap()
+    let (numbers, grids) = input.split_once("\n\n").expect("Invalid input");
+
+    let numbers = numbers
         .split(',')
-        .map(|n| n.parse().unwrap())
+        .map(|n| n.parse().expect("Invalid input"))
+        .collect::<Vec<u8>>();
+    let mut num_turn = vec![0; numbers.len()];
+    for (idx, n) in numbers.into_iter().enumerate() {
+        num_turn[n as usize] = idx as u8;
+    }
+
+    let grids = grids
+        .split("\n\n")
+        .map(|grid| {
+            <[_; 5]>::from_iter(grid.lines().map(|line| {
+                <[_; 5]>::from_iter(
+                    line.trim()
+                        .split_ascii_whitespace()
+                        .map(|n| n.parse::<u8>().unwrap()),
+                )
+            }))
+        })
         .collect();
 
-    let grids = lines
-        .enumerate()
-        .flat_map(|(g, grid)| {
-            grid.lines().enumerate().flat_map(move |(y, line)| {
-                line.trim().split_ascii_whitespace()
-                    .enumerate()
-                    .map(move |(x, n)| ((g as u8, y as u8, x as u8), n.parse::<u8>().unwrap()))
-            })
-        })
-        .collect::<HashMap<_, _>>();
+    Game { num_turn, grids }
+}
 
-    Game {
-        numbers,
-        grids,
-    }
+fn score_of_best_grid<K: Ord>(input: &Input, key: impl Fn(u8) -> K) -> u32 {
+    let Game { num_turn, grids } = input;
+
+    let (best_grid, best_grid_idx) = grids
+        .iter()
+        .map(|grid| {
+            fn best_idx(num_turn: &[u8], f: impl Copy + Fn(usize, usize) -> u8) -> u8 {
+                (0..5)
+                    .map(|d1| (0..5).map(|d2| num_turn[f(d1, d2) as usize]).max().unwrap())
+                    .min()
+                    .unwrap()
+            }
+            let best_row_idx = best_idx(num_turn, |d1, d2| grid[d1][d2]);
+            let best_col_idx = best_idx(num_turn, |d1, d2| grid[d2][d1]);
+            (grid, min(best_row_idx, best_col_idx))
+        })
+        .min_by_key(|&(_, idx)| key(idx))
+        .unwrap();
+
+    let unmarked_sum = best_grid
+        .iter()
+        .flatten()
+        .filter(|&&n| num_turn[n as usize] > best_grid_idx)
+        .map(|&n| n as u32)
+        .sum::<u32>();
+    let last = num_turn
+        .iter()
+        .position(|&idx| idx == best_grid_idx)
+        .unwrap() as u32;
+
+    unmarked_sum * last
 }
 
 pub fn part1(input: &Input) -> u32 {
-    let nums_rel = input.numbers.iter().enumerate().map(|(idx, &n)| (n, idx)).collect::<HashMap<_,_>>();
-    let mut g = 0;
-    let mut min_g = 0;
-    let mut min_g_idx = usize::MAX;
-    while input.grids.contains_key(&(g, 0, 0)) {
-        for y in 0..5 {
-            let max_idx_col = (0..5).map(|x| nums_rel[&input.grids[&(g, y, x)]]).max().unwrap();
-            if max_idx_col < min_g_idx {
-                min_g_idx = max_idx_col;
-                min_g = g;
-            }
-        }
-        for x in 0..5 {
-            let max_idx_row = (0..5).map(|y| nums_rel[&input.grids[&(g, y, x)]]).max().unwrap();
-            if max_idx_row < min_g_idx {
-                min_g_idx = max_idx_row;
-                min_g = g;
-            }
-        }
-        g += 1;
-    }
-
-    let last = input.numbers[min_g_idx];
-    input
-        .grids
-        .iter()
-        .filter(|&(pos, n)| pos.0 == min_g && nums_rel[n] > min_g_idx)
-        .map(|(_, &n)| n as u32)
-        .sum::<u32>()
-        * last as u32
+    score_of_best_grid(input, |idx| idx)
 }
 
 pub fn part2(input: &Input) -> u32 {
-    let nums_rel = input.numbers.iter().enumerate().map(|(idx, &n)| (n, idx)).collect::<HashMap<_,_>>();
-    let mut g = 0;
-    let mut max_g = 0;
-    let mut max_g_idx = 0;
-    while input.grids.contains_key(&(g, 0, 0)) {
-        let mut min_max_idx = usize::MAX;
-        for y in 0..5 {
-            let max_idx_col = (0..5).map(|x| nums_rel[&input.grids[&(g, y, x)]]).max().unwrap();
-            if max_idx_col < min_max_idx {
-                min_max_idx = max_idx_col;
-            }
-        }
-        for x in 0..5 {
-            let max_idx_row = (0..5).map(|y| nums_rel[&input.grids[&(g, y, x)]]).max().unwrap();
-            if max_idx_row < min_max_idx {
-                min_max_idx = max_idx_row;
-            }
-        }
-
-        if min_max_idx > max_g_idx {
-            max_g_idx = min_max_idx;
-            max_g = g;
-        }
-
-        g += 1;
-    }
-
-    let last = input.numbers[max_g_idx];
-    input
-        .grids
-        .iter()
-        .filter(|&(pos, n)| pos.0 == max_g && nums_rel[n] > max_g_idx)
-        .map(|(_, &n)| n as u32)
-        .sum::<u32>()
-        * last as u32
+    score_of_best_grid(input, |idx| -(idx as i8))
 }
