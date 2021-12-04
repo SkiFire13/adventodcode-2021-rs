@@ -25,8 +25,7 @@ pub fn input_generator(input: &str) -> Input {
         .map(|grid| {
             <[_; 5]>::from_iter(grid.lines().map(|line| {
                 <[_; 5]>::from_iter(
-                    line.trim()
-                        .split_ascii_whitespace()
+                    line.split_ascii_whitespace()
                         .map(|n| n.parse::<u8>().unwrap()),
                 )
             }))
