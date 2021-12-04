@@ -23,12 +23,10 @@ pub fn input_generator(input: &str) -> Input {
     let grids = grids
         .split("\n\n")
         .map(|grid| {
-            <[_; 5]>::from_iter(grid.lines().map(|line| {
-                <[_; 5]>::from_iter(
-                    line.split_ascii_whitespace()
-                        .map(|n| n.parse::<u8>().unwrap()),
-                )
-            }))
+            <[[_; 5]; 5]>::from_iter(
+                grid.split_ascii_whitespace()
+                    .map(|n| n.parse::<u8>().unwrap()),
+            )
         })
         .collect();
 
