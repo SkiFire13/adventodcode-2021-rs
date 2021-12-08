@@ -3,15 +3,16 @@ use super::prelude::*;
 type Input = Vec<Entry>;
 
 pub struct Entry {
-    digits: Vec<Digit>,
+    digits: [Digit; 10],
+    output: [Digit; 4],
 }
 
 impl Entry {
     fn find(&self, f: impl Fn(Digit) -> bool) -> Digit {
-        self.digits[..10].iter().copied().find(|&d| f(d)).unwrap()
+        self.digits.into_iter().find(|&d| f(d)).unwrap()
     }
-    fn out(&self) -> impl Iterator<Item = Digit> + '_ {
-        self.digits[10..].iter().copied()
+    fn out(&self) -> impl Iterator<Item = Digit> {
+        self.output.into_iter()
     }
 }
 
@@ -43,12 +44,18 @@ pub fn input_generator(input: &str) -> Input {
     input
         .lines()
         .map(|line| {
-            let digits = line
-                .split_ascii_whitespace()
-                .filter(|&s| s != "|")
-                .map(|d| Digit::from_bytes(d.as_bytes()))
-                .collect();
-            Entry { digits }
+            let (digits, output) = line.split_once(" | ").expect("Invalid input");
+
+            fn parse(line: &str) -> impl Iterator<Item = Digit> + '_ {
+                line.split_ascii_whitespace()
+                    .filter(|&s| s != "|")
+                    .map(|d| Digit::from_bytes(d.as_bytes()))
+            }
+
+            Entry {
+                digits: <[_; 10]>::from_iter(parse(digits)),
+                output: <[_; 4]>::from_iter(parse(output)),
+            }
         })
         .collect()
 }
