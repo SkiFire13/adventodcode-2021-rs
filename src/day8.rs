@@ -7,29 +7,35 @@ pub struct Entry {
 }
 
 impl Entry {
-    fn find(&self, f: impl Fn(&Digit) -> bool) -> &Digit {
-        self.digits[..10].iter().find(|&d| f(d)).unwrap()
+    fn find(&self, f: impl Fn(Digit) -> bool) -> Digit {
+        self.digits[..10].iter().copied().find(|&d| f(d)).unwrap()
     }
-    fn out(&self) -> impl Iterator<Item=&Digit> {
-        self.digits[10..].iter()
+    fn out(&self) -> impl Iterator<Item = Digit> + '_ {
+        self.digits[10..].iter().copied()
     }
 }
 
-#[derive(PartialEq, Eq)]
-pub struct Digit(Vec<u8>);
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Digit(u8);
 
 impl Digit {
+    fn from_bytes(bytes: &[u8]) -> Self {
+        Self(bytes.iter().fold(0, |acc, &b| acc | (1 << (b - b'a'))))
+    }
     fn len(&self) -> usize {
-        self.0.len()
+        self.0.count_ones() as usize
     }
     fn contains(&self, s: u8) -> bool {
-        self.0.contains(&s)
-    }
-    fn all(&self, f: impl Fn(u8) -> bool) -> bool {
-        self.0.iter().copied().all(f)
+        self.0 & s == s
     }
     fn find(&self, f: impl Fn(u8) -> bool) -> u8 {
-        self.0.iter().copied().find(|&s| f(s)).unwrap()
+        (0..7)
+            .map(|shift| self.0 & (1 << shift))
+            .find(|&s| s != 0 && f(s))
+            .unwrap()
+    }
+    fn contains_all(&self, other: Self) -> bool {
+        self.0 & other.0 == other.0
     }
 }
 
@@ -37,9 +43,10 @@ pub fn input_generator(input: &str) -> Input {
     input
         .lines()
         .map(|line| {
-            let digits = line.split_ascii_whitespace()
+            let digits = line
+                .split_ascii_whitespace()
                 .filter(|&s| s != "|")
-                .map(|d| Digit(d.as_bytes().to_owned()))
+                .map(|d| Digit::from_bytes(d.as_bytes()))
                 .collect();
             Entry { digits }
         })
@@ -55,7 +62,7 @@ pub fn part1(input: &Input) -> usize {
 }
 
 pub fn part2(input: &Input) -> usize {
-    let all = Digit(b"abcdefg".to_vec());
+    let all = Digit::from_bytes(b"abcdefg");
 
     input
         .iter()
@@ -63,7 +70,7 @@ pub fn part2(input: &Input) -> usize {
             let d1 = entry.find(|d| d.len() == 2);
             let d4 = entry.find(|d| d.len() == 4);
             let d7 = entry.find(|d| d.len() == 3);
-            let d6 = entry.find(|d| d.len() == 6 && !d1.all(|s| d.contains(s)));
+            let d6 = entry.find(|d| d.len() == 6 && !d.contains_all(d1));
 
             let sc = all.find(|s| !d6.contains(s));
 
@@ -86,11 +93,7 @@ pub fn part2(input: &Input) -> usize {
 
             entry
                 .out()
-                .map(|d| {
-                    ds.iter()
-                        .position(|c| c.len() == d.len() && c.all(|s| d.contains(s)))
-                        .unwrap()
-                })
+                .map(|d| ds.iter().position(|&c| c == d).unwrap())
                 .fold(0, |acc, d| acc * 10 + d)
         })
         .sum()
