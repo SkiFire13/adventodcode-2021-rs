@@ -6,7 +6,7 @@ pub fn input_generator(input: &str) -> Input {
     Grid::from_input_chars(input, |c, _, _| c as u8 - b'0')
 }
 
-pub fn part1(input: &Input) -> u32 {
+pub fn part1(input: &Input) -> u16 {
     let mut risk = 0;
     for y in 0..input.height() {
         for x in 0..input.width {
@@ -16,26 +16,26 @@ pub fn part1(input: &Input) -> u32 {
                 .filter_map(|(dx, dy)| input.iget((x as isize + dx, y as isize + dy)))
                 .all(|&n| n > p)
             {
-                risk += 1 + p as u32;
+                risk += 1 + p as u16;
             }
         }
     }
     risk
 }
 
-pub fn part2(input: &Input) -> usize {
+pub fn part2(input: &Input) -> u16 {
     type Point = (usize, usize);
 
     #[derive(Clone, Copy)]
     enum Basin {
-        Root(usize),
-        Link(Point),
+        Root(u16),
+        Link((u8, u8)),
     }
 
-    fn root(basins: &Grid<Basin>, p: Point) -> (Point, usize) {
+    fn root(basins: &Grid<Basin>, p: Point) -> (Point, u16) {
         match basins[p] {
             Basin::Root(c) => (p, c),
-            Basin::Link(p) => root(basins, p),
+            Basin::Link(p) => root(basins, (p.0 as usize, p.1 as usize)),
         }
     }
 
@@ -44,7 +44,7 @@ pub fn part2(input: &Input) -> usize {
         let (root2, count2) = root(&basins, p2);
         if root1 != root2 {
             basins[root1] = Basin::Root(count1 + count2);
-            basins[root2] = Basin::Link(root1);
+            basins[root2] = Basin::Link((root1.0 as u8, root1.1 as u8));
         }
     }
 
@@ -67,9 +67,9 @@ pub fn part2(input: &Input) -> usize {
         .vec
         .into_iter()
         .filter_map(|basin| match basin {
-            Basin::Root(count) => Some(-(count as isize)),
+            Basin::Root(count) => Some(-(count as i16)),
             Basin::Link(_) => None,
         })
         .k_smallest(3)
-        .fold(1, |acc, c| acc * (-c as usize))
+        .fold(1, |acc, c| acc * (-c as u16))
 }
