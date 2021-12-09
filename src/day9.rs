@@ -24,39 +24,52 @@ pub fn part1(input: &Input) -> u32 {
 }
 
 pub fn part2(input: &Input) -> usize {
-    let mut basins: Vec<HashSet<(usize, usize)>> = Vec::new();
-    for x in 0..input.width {
-        for y in 0..input.height() {
-            if input[(x,y)] != 9 {
-                let mut connected_basins: Vec<usize> = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                    .into_iter()
-                    .map(|(dx, dy)| (x as isize + dx, y as isize + dy))
-                    .filter(|&(x, y)| input.iget((x, y)).map_or(false, |&b| b != 9))
-                    .map(|(x, y)| (x as usize, y as usize))
-                    .filter_map(|(x, y)| basins.iter().position(|basin| basin.contains(&(x, y))))
-                    .sorted()
-                    .collect();
-                connected_basins.dedup();            
+    type Point = (usize, usize);
 
-                match connected_basins.len() {
-                    0 => basins.push(HashSet::from([(x, y)])),
-                    1 => {
-                        basins[connected_basins[0]].insert((x, y));
-                    }
-                    _ => {
-                        let new_basin = connected_basins
-                            .iter()
-                            .rev()
-                            .flat_map(|&idx| basins.swap_remove(idx))
-                            .chain([(x, y)])
-                            .collect();
-                        basins.push(new_basin);
-                    }
-                }
+    #[derive(Clone, Copy)]
+    enum Basin {
+        Root(usize),
+        Link(Point),
+    }
+
+    fn root(basins: &Grid<Basin>, p: Point) -> (Point, usize) {
+        match basins[p] {
+            Basin::Root(c) => (p, c),
+            Basin::Link(p) => root(basins, p),
+        }
+    }
+
+    fn union(basins: &mut Grid<Basin>, p1: Point, p2: Point) {
+        let (root1, count1) = root(&basins, p1);
+        let (root2, count2) = root(&basins, p2);
+        if root1 != root2 {
+            basins[root1] = Basin::Root(count1 + count2);
+            basins[root2] = Basin::Link(root1);
+        }
+    }
+
+    let mut basins = Grid {
+        vec: Vec::with_capacity(input.vec.len()),
+        width: input.width,
+    };
+
+    for y in 0..input.height() {
+        for x in 0..input.width {
+            basins.vec.push(Basin::Root(1));
+            if input[(x, y)] != 9 {
+                (x > 0 && input[(x - 1, y)] != 9).then(|| union(&mut basins, (x - 1, y), (x, y)));
+                (y > 0 && input[(x, y - 1)] != 9).then(|| union(&mut basins, (x, y - 1), (x, y)));
             }
         }
     }
 
-    basins.sort_by_key(|b| -(b.len() as isize));
-    basins[..3].iter().map(|b| b.len()).product()
+    basins
+        .vec
+        .into_iter()
+        .filter_map(|basin| match basin {
+            Basin::Root(count) => Some(-(count as isize)),
+            Basin::Link(_) => None,
+        })
+        .k_smallest(3)
+        .fold(1, |acc, c| acc * (-c as usize))
 }
