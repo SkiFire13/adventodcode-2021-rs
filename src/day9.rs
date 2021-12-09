@@ -8,8 +8,8 @@ pub fn input_generator(input: &str) -> Input {
 
 pub fn part1(input: &Input) -> u32 {
     let mut risk = 0;
-    for x in 0..input.width {
-        for y in 0..input.height() {
+    for y in 0..input.height() {
+        for x in 0..input.width {
             let p = input[(x, y)];
             if [(-1, 0), (1, 0), (0, -1), (0, 1)]
                 .into_iter()
