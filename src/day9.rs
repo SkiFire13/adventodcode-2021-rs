@@ -23,7 +23,7 @@ pub fn part1(input: &Input) -> u16 {
     risk
 }
 
-pub fn part2(input: &Input) -> u16 {
+pub fn part2(input: &Input) -> u32 {
     type Point = (usize, usize);
 
     #[derive(Clone, Copy)]
@@ -71,5 +71,5 @@ pub fn part2(input: &Input) -> u16 {
             Basin::Link(_) => None,
         })
         .k_smallest(3)
-        .fold(1, |acc, c| acc * (-c as u16))
+        .fold(1, |acc, c| acc * (-c as u32))
 }
