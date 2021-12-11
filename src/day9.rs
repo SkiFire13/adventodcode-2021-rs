@@ -11,11 +11,7 @@ pub fn part1(input: &Input) -> u16 {
     for y in 0..input.height() {
         for x in 0..input.width {
             let p = input[(x, y)];
-            if [(-1, 0), (1, 0), (0, -1), (0, 1)]
-                .into_iter()
-                .filter_map(|(dx, dy)| input.iget((x as isize + dx, y as isize + dy)))
-                .all(|&n| n > p)
-            {
+            if input.plus_neighbours((x, y)).all(|n| input[n] > p) {
                 risk += 1 + p as u16;
             }
         }
