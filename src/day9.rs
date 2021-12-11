@@ -8,12 +8,10 @@ pub fn input_generator(input: &str) -> Input {
 
 pub fn part1(input: &Input) -> u16 {
     let mut risk = 0;
-    for y in 0..input.height() {
-        for x in 0..input.width {
-            let p = input[(x, y)];
-            if input.plus_neighbours((x, y)).all(|n| input[n] > p) {
-                risk += 1 + p as u16;
-            }
+    for (y, x) in itertools::iproduct!(0..input.height(), 0..input.width) {
+        let p = input[(x, y)];
+        if input.plus_neighbours((x, y)).all(|n| input[n] > p) {
+            risk += 1 + p as u16;
         }
     }
     risk
@@ -49,13 +47,11 @@ pub fn part2(input: &Input) -> u32 {
         width: input.width,
     };
 
-    for y in 0..input.height() {
-        for x in 0..input.width {
-            basins.vec.push(Basin::Root(1));
-            if input[(x, y)] != 9 {
-                (x > 0 && input[(x - 1, y)] != 9).then(|| union(&mut basins, (x - 1, y), (x, y)));
-                (y > 0 && input[(x, y - 1)] != 9).then(|| union(&mut basins, (x, y - 1), (x, y)));
-            }
+    for (y, x) in itertools::iproduct!(0..input.height(), 0..input.width) {
+        basins.vec.push(Basin::Root(1));
+        if input[(x, y)] != 9 {
+            (x > 0 && input[(x - 1, y)] != 9).then(|| union(&mut basins, (x - 1, y), (x, y)));
+            (y > 0 && input[(x, y - 1)] != 9).then(|| union(&mut basins, (x, y - 1), (x, y)));
         }
     }
 
