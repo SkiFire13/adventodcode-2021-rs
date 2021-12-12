@@ -24,26 +24,33 @@ pub fn paths_num<'a>(
     input: &Input<'a>,
     visited: u16,
     allow_twice: bool,
+    memoized: &mut HashMap<(u8, bool, u16), usize>,
 ) -> usize {
     if start == 1 {
         return 1;
     }
+    if let Some(&num) = memoized.get(&(start as u8, allow_twice, visited)) {
+        return num;
+    }
+
     let mut num = 0;
     let neighbours = input[start];
     for dest in (0..15).filter(|&idx| neighbours & (1 << idx) != 0) {
         if visited & (1 << dest) == 0 || input[dest] & (1 << 15) == 0 {
-            num += paths_num(dest, input, visited | (1 << dest), allow_twice);
+            num += paths_num(dest, input, visited | (1 << dest), allow_twice, memoized);
         } else if allow_twice == true && dest != 0 {
-            num += paths_num(dest, input, visited, false);
+            num += paths_num(dest, input, visited, false, memoized);
         }
     }
+
+    memoized.insert((start as u8, allow_twice, visited), num);
     num
 }
 
 pub fn part1(input: &Input) -> usize {
-    paths_num(0, input, 1, false)
+    paths_num(0, input, 1, false, &mut HashMap::new())
 }
 
 pub fn part2(input: &Input) -> usize {
-    paths_num(0, input, 1, true)
+    paths_num(0, input, 1, true, &mut HashMap::new())
 }
