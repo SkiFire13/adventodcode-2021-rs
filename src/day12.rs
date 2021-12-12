@@ -24,13 +24,15 @@ pub fn paths_num<'a>(
     input: &Input<'a>,
     visited: u16,
     allow_twice: bool,
-    memoized: &mut HashMap<(u8, bool, u16), usize>,
-) -> usize {
+    memoized: &mut Vec<u32>,
+) -> u32 {
     if start == 1 {
         return 1;
     }
-    if let Some(&num) = memoized.get(&(start as u8, allow_twice, visited)) {
-        return num;
+
+    let key = ((start as usize) << 16) | ((allow_twice as usize) << 15) | visited as usize;
+    if memoized[key] != 0 {
+        return memoized[key] - 1;
     }
 
     let mut num = 0;
@@ -43,14 +45,14 @@ pub fn paths_num<'a>(
         }
     }
 
-    memoized.insert((start as u8, allow_twice, visited), num);
+    memoized[key] = num + 1;
     num
 }
 
-pub fn part1(input: &Input) -> usize {
-    paths_num(0, input, 1, false, &mut HashMap::new())
+pub fn part1(input: &Input) -> u32 {
+    paths_num(0, input, 1, false, &mut vec![0; 1 << 20])
 }
 
-pub fn part2(input: &Input) -> usize {
-    paths_num(0, input, 1, true, &mut HashMap::new())
+pub fn part2(input: &Input) -> u32 {
+    paths_num(0, input, 1, true, &mut vec![0; 1 << 20])
 }
