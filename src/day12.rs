@@ -12,42 +12,33 @@ pub fn input_generator(input: &str) -> Input {
     map
 }
 
-pub fn part1(input: &Input) -> usize {
-    fn paths<'a>(input: &Input<'a>, visited: &mut HashSet<&'a str>, curr_pos: &'a str,) -> usize {
-        if curr_pos == "end" {
-            return 1;
-        }
-        let mut paths_num = 0;
-        for &dest in &input[curr_pos] {
-            if visited.insert(dest) || dest.as_bytes()[0].is_ascii_uppercase() {
-                paths_num += paths(input, visited, dest);
-                visited.remove(dest);
-            }
-        }
-        paths_num
+pub fn paths_num<'a>(
+    start: &'a str,
+    input: &Input<'a>,
+    visited: &mut HashSet<&'a str>,
+    allow_twice: &mut bool,
+) -> usize {
+    if start == "end" {
+        return 1;
     }
+    let mut num = 0;
+    for &dest in &input[start] {
+        if visited.insert(dest) || dest.as_bytes()[0].is_ascii_uppercase() {
+            num += paths_num(dest, input, visited, allow_twice);
+            visited.remove(dest);
+        } else if *allow_twice == true && dest != "start" {
+            *allow_twice = false;
+            num += paths_num(dest, input, visited, allow_twice);
+            *allow_twice = true;
+        }
+    }
+    num
+}
 
-    paths(input, &mut HashSet::from(["start"]), "start")
+pub fn part1(input: &Input) -> usize {
+    paths_num("start", input, &mut HashSet::from(["start"]), &mut false)
 }
 
 pub fn part2(input: &Input) -> usize {
-    fn paths<'a>(input: &Input<'a>, visited: &mut HashSet<&'a str>, curr_pos: &'a str, twice: &mut bool) -> usize {
-        if curr_pos == "end" {
-            return 1;
-        }
-        let mut paths_num = 0;
-        for &dest in &input[curr_pos] {
-            if visited.insert(dest) || dest.as_bytes()[0].is_ascii_uppercase() {
-                paths_num += paths(input, visited, dest, twice);
-                visited.remove(dest);
-            } else if *twice == false && dest != "start" {
-                *twice = true;
-                paths_num += paths(input, visited, dest, twice);
-                *twice = false;
-            }
-        }
-        paths_num
-    }
-
-    paths(input, &mut HashSet::from(["start"]), "start", &mut false)
+    paths_num("start", input, &mut HashSet::from(["start"]), &mut true)
 }
