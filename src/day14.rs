@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::prelude::*;
-type Input<'a> = (Vec<u8>, HashMap<(u8, u8), u8>);
+type Input<'a> = (Vec<u8>, FxHashMap<(u8, u8), u8>);
 
 pub fn input_generator(input: &str) -> Input {
     let (template, rules) = input.split_once("\n\n").unwrap();
@@ -13,10 +13,13 @@ pub fn input_generator(input: &str) -> Input {
     (template, rules)
 }
 
-pub fn simulate_steps(template: &[u8], rules: &HashMap<(u8, u8), u8>, steps: usize) -> usize {
+pub fn simulate_steps(template: &[u8], rules: &FxHashMap<(u8, u8), u8>, steps: usize) -> usize {
     let mut counts = template.iter().copied().counts();
-    let mut tuple_counts = template.iter().copied().tuple_windows().counts();
-    let mut new_tuple_counts = HashMap::<(u8, u8), usize>::new();
+    let mut tuple_counts = FxHashMap::default();
+    for t in template.iter().copied().tuple_windows() {
+        *tuple_counts.entry(t).or_default() += 1;
+    }
+    let mut new_tuple_counts = FxHashMap::<(u8, u8), usize>::default();
     for _ in 0..steps {
         for (&(a, b), &count) in tuple_counts.iter() {
             if let Some(&middle) = rules.get(&(a, b)) {

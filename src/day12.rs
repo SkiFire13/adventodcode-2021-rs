@@ -3,7 +3,7 @@ use super::prelude::*;
 type Input<'a> = Vec<u16>;
 
 pub fn input_generator(input: &str) -> Input {
-    let mut map = HashMap::from([("start", 0), ("end", 1)]);
+    let mut map = FxHashMap::from_iter([("start", 0), ("end", 1)]);
     let mut edges = vec![1 << 15; 2];
     for line in input.lines() {
         let (n1, n2) = line.split_once('-').unwrap();
