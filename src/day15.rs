@@ -7,10 +7,10 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 fn best_path(input: &Input) -> u16 {
-    let mut queue = BinaryHeap::from([Reverse((0, input.width as u16 - 1, input.height() as u16 - 1))]);
+    let mut queue = BinaryHeap::from([Reverse((0, input.w() as u16 - 1, input.h() as u16 - 1))]);
     let mut seen = Grid {
         vec: vec![false; input.vec.len()],
-        width: input.width,
+        width: input.w(),
     };
 
     while let Some(Reverse((risk, x, y))) = queue.pop() {
@@ -39,10 +39,10 @@ pub fn part1(input: &Input) -> u16 {
 pub fn part2(input: &Input) -> u16 {
     let mut vec = Vec::with_capacity(input.vec.len() * 25);
     for my in 0..5 {
-        for y in 0..input.height() {
+        for y in 0..input.h() {
             for mx in 0..5 {
                 vec.extend(
-                    input.vec[input.width * y..][..input.width]
+                    input.vec[input.w() * y..][..input.w()]
                         .iter()
                         .map(|&r| (r + mx + my - 1) % 9 + 1),
                 )
@@ -51,7 +51,7 @@ pub fn part2(input: &Input) -> u16 {
     }
     let input = Grid {
         vec,
-        width: input.width * 5,
+        width: input.w() * 5,
     };
 
     best_path(&input)

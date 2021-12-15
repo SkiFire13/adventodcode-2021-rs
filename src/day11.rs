@@ -7,7 +7,7 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 fn step(grid: &mut Grid<u8>, queue: &mut Vec<(usize, usize)>) -> usize {
-    for (y, x) in itertools::iproduct!(0..grid.height(), 0..grid.width) {
+    for (y, x) in itertools::iproduct!(0..grid.h(), 0..grid.w()) {
         queue.push((x, y));
         while let Some((x, y)) = queue.pop() {
             (grid[(x, y)] == 9).then(|| queue.extend(grid.square_neighbours((x, y))));
