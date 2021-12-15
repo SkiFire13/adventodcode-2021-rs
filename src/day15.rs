@@ -8,17 +8,21 @@ pub fn input_generator(input: &str) -> Input {
 
 fn best_path(input: &Input) -> u16 {
     let mut queue = BinaryHeap::from([Reverse((0, input.width - 1, input.height() - 1))]);
-    let mut seen = HashSet::new();
+    let mut seen = Grid {
+        vec: vec![false; input.vec.len()],
+        width: input.width,
+    };
 
     while let Some(Reverse((risk, x, y))) = queue.pop() {
-        if seen.insert((x, y)) {
-            if (x, y) == (0, 0) {
-                return risk;
-            }
+        if (x, y) == (0, 0) {
+            return risk;
+        }
+        if !std::mem::replace(&mut seen[(x, y)], true) {
             let risk = risk + input[(x, y)];
             queue.extend(
                 input
                     .plus_neighbours((x, y))
+                    .filter(|&(nx, ny)| !seen[(nx, ny)])
                     .map(|(nx, ny)| Reverse((risk, nx, ny))),
             );
         }
