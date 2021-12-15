@@ -16,4 +16,5 @@ aoc_helper::main!(2021 =>
     day12,
     day13,
     day14,
+    day15,
 );
