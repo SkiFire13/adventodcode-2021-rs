@@ -8,10 +8,7 @@ pub fn input_generator(input: &str) -> Input {
 
 fn best_path(input: &Input) -> u16 {
     let mut queue = BinaryHeap::from([Reverse((0, input.w() as u16 - 1, input.h() as u16 - 1))]);
-    let mut seen = Grid {
-        vec: vec![false; input.vec.len()],
-        width: input.w(),
-    };
+    let mut seen = input.map_ref(|_, _, _| false);
 
     while let Some(Reverse((risk, x, y))) = queue.pop() {
         let (x, y) = (x as usize, y as usize);
