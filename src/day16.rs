@@ -5,150 +5,92 @@ type Input = Vec<u8>;
 pub fn input_generator(input: &str) -> Input {
     input
         .bytes()
-        .flat_map(|b| match b {
-            b'0' => [0, 0, 0, 0],
-            b'1' => [0, 0, 0, 1],
-            b'2' => [0, 0, 1, 0],
-            b'3' => [0, 0, 1, 1],
-            b'4' => [0, 1, 0, 0],
-            b'5' => [0, 1, 0, 1],
-            b'6' => [0, 1, 1, 0],
-            b'7' => [0, 1, 1, 1],
-            b'8' => [1, 0, 0, 0],
-            b'9' => [1, 0, 0, 1],
-            b'A' => [1, 0, 1, 0],
-            b'B' => [1, 0, 1, 1],
-            b'C' => [1, 1, 0, 0],
-            b'D' => [1, 1, 0, 1],
-            b'E' => [1, 1, 1, 0],
-            b'F' => [1, 1, 1, 1],
+        .map(|c| match c {
+            b'0'..=b'9' => c - b'0',
+            b'A'..=b'F' => c - b'A' + 10,
             _ => panic!(),
         })
+        .flat_map(|b| [b >> 3, b >> 2, b >> 1, b])
+        .map(|b| b & 1)
         .collect()
 }
 
-pub fn part1(input: &Input) -> usize {
-    fn parse_packet(data: &mut &[u8]) -> usize {
-        if data.len() < 10 {
-            return 0;
-        }
-        let version = ((data[0] << 2) | (data[1] << 1) | data[2]) as usize;
-        let ty = (data[3] << 2) | (data[4] << 1) | data[5];
-        *data = &data[6..];
-        match ty {
-            4 => {
-                while data[0] == 1 {
-                    *data = &data[5..];
-                }
-                *data = &data[5..];
-                version
-            }
-            _ if data[0] == 0 => {
-                let length = data[1..16]
-                    .iter()
-                    .fold(0, |acc, &b| (acc << 1) | b as usize);
-                *data = &data[16..];
-                let mut sum = version;
-                let mut inner_data = &data[..length];
-                while !inner_data.is_empty() {
-                    sum += parse_packet(&mut inner_data);
-                }
-                *data = &data[length..];
-                sum
-            }
-            _ => {
-                let subpackets = data[1..12]
-                    .iter()
-                    .fold(0, |acc, &b| (acc << 1) | b as usize);
-                *data = &data[12..];
-                let mut sum = version;
-                for _ in 0..subpackets {
-                    sum += parse_packet(data);
-                }
-                sum
-            }
-        }
-    }
-    let mut data = &**input;
-    parse_packet(&mut data)
+fn read_n(data: &mut &[u8], n: usize) -> u64 {
+    let value = data[..n].iter().fold(0, |acc, &b| (acc << 1) | b as u64);
+    *data = &data[n..];
+    value
 }
 
-pub fn part2(input: &Input) -> usize {
-    fn parse_packet(data: &mut &[u8]) -> usize {
+fn read_literal(data: &mut &[u8]) -> u64 {
+    let mut lit = 0;
+    let mut last_read = false;
+    while !last_read {
+        last_read = read_n(data, 1) == 0;
+        lit = (lit << 4) | read_n(data, 4);
+    }
+    lit
+}
+
+// Workaround for an `impl Trait` bug
+trait Captures<'a> {}
+impl<'a, T: ?Sized> Captures<'a> for T {}
+
+fn read_n_packets<'m, 'd, T>(
+    data: &'m mut &'d [u8],
+    read: impl Fn(&mut &[u8]) -> T + 'm,
+) -> impl Iterator<Item = T> + Captures<'m> + Captures<'d> {
+    if read_n(data, 1) == 0 {
+        let length = read_n(data, 15) as usize;
+        let initial_len = data.len();
+        Either::Left(iter::from_fn(move || {
+            (initial_len - data.len() < length).then(|| read(data))
+        }))
+    } else {
+        let num_packets = read_n(data, 11);
+        Either::Right((0..num_packets).map(move |_| read(data)))
+    }
+}
+
+pub fn part1(input: &Input) -> u64 {
+    fn read_packet(data: &mut &[u8]) -> u64 {
         if data.len() < 10 {
             return 0;
         }
-        //let version = ((data[0] << 2) | (data[1] << 1) | data[2]) as usize;
-        let ty = (data[3] << 2) | (data[4] << 1) | data[5];
-        *data = &data[6..];
-
+        let version = read_n(data, 3);
+        let ty = read_n(data, 3);
         if ty == 4 {
-            let mut sum = 0;
-            loop {
-                sum <<= 4;
-                sum |= data[1..5].iter().fold(0, |acc, &b| (acc << 1) | b as usize);
-                let exit = data[0] == 0;
-                *data = &data[5..];
-                if exit {
-                    break;
-                }
-            }
-            return sum;
-        }
-
-        let packets = if data[0] == 0 {
-            let length = data[1..16]
-                .iter()
-                .fold(0, |acc, &b| (acc << 1) | b as usize);
-            *data = &data[16..];
-            let mut packets = Vec::new();
-            let mut inner_data = &data[..length];
-            while !inner_data.is_empty() {
-                packets.push(parse_packet(&mut inner_data));
-            }
-            *data = &data[length..];
-            packets
+            let _literal = read_literal(data);
+            version
         } else {
-            let subpackets = data[1..12]
-                .iter()
-                .fold(0, |acc, &b| (acc << 1) | b as usize);
-            let mut packets = Vec::new();
-            *data = &data[12..];
-            for _ in 0..subpackets {
-                packets.push(parse_packet(data));
-            }
-            packets
-        };
-
-        match ty {
-            0 => packets.iter().sum(),
-            1 => packets.iter().product(),
-            2 => packets.iter().copied().min().unwrap(),
-            3 => packets.iter().copied().max().unwrap(),
-            5 => {
-                if packets[0] > packets[1] {
-                    1
-                } else {
-                    0
-                }
-            }
-            6 => {
-                if packets[0] < packets[1] {
-                    1
-                } else {
-                    0
-                }
-            }
-            7 => {
-                if packets[0] == packets[1] {
-                    1
-                } else {
-                    0
-                }
-            }
-            _ => panic!(),
+            read_n_packets(data, read_packet).sum::<u64>()
         }
     }
-    let mut data = &**input;
-    parse_packet(&mut data)
+    read_packet(&mut &**input)
+}
+
+pub fn part2(input: &Input) -> u64 {
+    fn read_packet(data: &mut &[u8]) -> u64 {
+        if data.len() < 10 {
+            return 0;
+        }
+        let _version = read_n(data, 3);
+        let ty = read_n(data, 3);
+
+        if ty == 4 {
+            read_literal(data)
+        } else {
+            let mut iter = read_n_packets(data, read_packet);
+            match ty {
+                0 => iter.sum(),
+                1 => iter.product(),
+                2 => iter.min().unwrap(),
+                3 => iter.max().unwrap(),
+                5 => (iter.next().unwrap() > iter.next().unwrap()) as u64,
+                6 => (iter.next().unwrap() < iter.next().unwrap()) as u64,
+                7 => (iter.next().unwrap() == iter.next().unwrap()) as u64,
+                _ => panic!(),
+            }
+        }
+    }
+    read_packet(&mut &**input)
 }
