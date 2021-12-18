@@ -40,7 +40,7 @@ pub fn paths_num<'a>(
     for dest in (0..15).filter(|&idx| neighbours & (1 << idx) != 0) {
         if visited & (1 << dest) == 0 || input[dest] & (1 << 15) == 0 {
             num += paths_num(dest, input, visited | (1 << dest), allow_twice, memoized);
-        } else if allow_twice == true && dest != 0 {
+        } else if allow_twice && dest != 0 {
             num += paths_num(dest, input, visited, false, memoized);
         }
     }

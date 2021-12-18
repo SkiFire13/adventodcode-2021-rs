@@ -34,8 +34,8 @@ pub fn part2(input: &Input) -> u32 {
     }
 
     fn union(basins: &mut Grid<Basin>, p1: Point, p2: Point) {
-        let (root1, count1) = root(&basins, p1);
-        let (root2, count2) = root(&basins, p2);
+        let (root1, count1) = root(basins, p1);
+        let (root2, count2) = root(basins, p2);
         if root1 != root2 {
             basins[root1] = Basin::Root(count1 + count2);
             basins[root2] = Basin::Link((root1.0 as u8, root1.1 as u8));

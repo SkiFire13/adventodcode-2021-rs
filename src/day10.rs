@@ -38,7 +38,7 @@ pub fn part2(input: &Input) -> usize {
                     b']' if stack.last() != Some(&b'[') => return None,
                     b'}' if stack.last() != Some(&b'{') => return None,
                     b'>' if stack.last() != Some(&b'<') => return None,
-                    _ => drop(stack.pop()),
+                    _ => forget(stack.pop()),
                 }
             }
             Some(stack.iter().rev().fold(0, |acc, b| {
