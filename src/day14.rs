@@ -22,7 +22,7 @@ pub fn simulate_steps(template: &[u8], rules: &FxHashMap<(u8, u8), u8>, steps: u
     let mut new_tuple_counts = FxHashMap::<(u8, u8), usize>::default();
     for _ in 0..steps {
         for (&(a, b), count) in tuple_counts.iter_mut() {
-            let count = std::mem::take(count);
+            let count = take(count);
             if let Some(&middle) = rules.get(&(a, b)) {
                 *new_tuple_counts.entry((a, middle)).or_default() += count;
                 *new_tuple_counts.entry((middle, b)).or_default() += count;
@@ -31,7 +31,7 @@ pub fn simulate_steps(template: &[u8], rules: &FxHashMap<(u8, u8), u8>, steps: u
                 *new_tuple_counts.entry((a, b)).or_default() += count;
             }
         }
-        std::mem::swap(&mut tuple_counts, &mut new_tuple_counts);
+        swap(&mut tuple_counts, &mut new_tuple_counts);
     }
 
     let max = counts.values().max().unwrap();

@@ -15,7 +15,7 @@ fn best_path(input: &Input) -> u16 {
         if (x, y) == (0, 0) {
             return risk;
         }
-        if !std::mem::replace(&mut seen[(x, y)], true) {
+        if !replace(&mut seen[(x, y)], true) {
             let risk = risk + input[(x, y)];
             queue.extend(
                 input

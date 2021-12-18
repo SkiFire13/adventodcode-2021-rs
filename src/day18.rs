@@ -8,12 +8,6 @@ pub struct SnailFish {
     value: u8,
 }
 
-fn eat<T: Copy>(input: &mut &[T]) -> T {
-    let first = input[0];
-    *input = &input[1..];
-    first
-}
-
 pub fn input_generator(input: &str) -> Input {
     input
         .lines()
@@ -22,7 +16,7 @@ pub fn input_generator(input: &str) -> Input {
             let mut output = Vec::new();
             let mut depth = 0;
             loop {
-                match eat(input) {
+                match eat_copy(input) {
                     b'[' => depth += 1,
                     b']' if depth == 1 => return output,
                     b']' => depth -= 1,
@@ -71,7 +65,7 @@ fn sum(n1: Vec<SnailFish>, n2: &[SnailFish]) -> Vec<SnailFish> {
 fn magnitude(mut sfs: &[SnailFish]) -> u32 {
     fn helper(sfs: &mut &[SnailFish], depth: u8) -> u32 {
         if sfs[0].depth == depth {
-            return eat(sfs).value as u32;
+            return eat_copy(sfs).value as u32;
         }
         3 * helper(sfs, depth + 1) + 2 * helper(sfs, depth + 1)
     }
