@@ -66,6 +66,21 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], Vec<[i16; 3]>)> {
         width: input.len(),
     };
 
+    let distances = input
+        .iter()
+        .map(|points| {
+            (0..points.len())
+                .flat_map(|i| (i + 1..points.len()).map(move |j| (points[i], points[j])))
+                .map(|(p1, p2)| {
+                    p1.iter()
+                        .zip(p2)
+                        .map(|(&d1, d2)| (d1 - d2).abs())
+                        .sum::<i16>()
+                })
+                .collect::<FxHashSet<_>>()
+        })
+        .collect::<Vec<_>>();
+
     let rotated_points = input
         .iter()
         .map(|points| {
@@ -85,6 +100,11 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], Vec<[i16; 3]>)> {
             }
             'j: for j in 0..input.len() {
                 if found[j].is_none() || replace(&mut visited[(i, j)], true) {
+                    continue 'j;
+                }
+
+                let common_distances = distances[i].intersection(&distances[j]).count();
+                if common_distances < 12 * 11 / 2 {
                     continue 'j;
                 }
 
