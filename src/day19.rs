@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::prelude::*;
-type Input = Vec<HashSet<[i16; 3]>>;
+type Input = Vec<Vec<[i16; 3]>>;
 
 pub fn input_generator(input: &str) -> Input {
     input
@@ -56,7 +56,7 @@ const ROTS: [Rot; 24] = {
     rots
 };
 
-fn resolve_positions(input: &Input) -> Vec<([i16; 3], HashSet<[i16; 3]>)> {
+fn resolve_positions(input: &Input) -> Vec<([i16; 3], Vec<[i16; 3]>)> {
     let mut num_found = 1;
     let mut found = vec![None; input.len()];
     found[0] = Some(([0; 3], input[0].clone()));
