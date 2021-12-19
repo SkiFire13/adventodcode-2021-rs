@@ -20,66 +20,38 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 type Rot = [[i16; 3]; 3];
-type Vet = [i16; 3];
 
-// m2 is applied first
-const fn mat_x_mat(m1: Rot, m2: Rot) -> Rot {
+const fn combine_rots(prev: Rot, new: Rot) -> Rot {
     let mut output = [[0; 3]; 3];
-    let mut i = 0;
-    while i < 3 {
-        let mut j = 0;
-        while j < 3 {
-            let mut k = 0;
-            while k < 3 {
-                output[i][j] += m1[i][k] * m2[k][j];
-                k += 1;
-            }
-            j += 1;
-        }
-        i += 1;
+    let mut ijk = 0;
+    while ijk < 27 {
+        let (i, j, k) = (ijk / 9, (ijk / 3) % 3, ijk % 3);
+        output[i][j] += new[i][k] * prev[k][j];
+        ijk += 1;
     }
     output
 }
 
-const fn mat_x_vet(m: Rot, v: Vet) -> Vet {
-    let mut output = [0; 3];
-    let mut i = 0;
-    while i < 3 {
-        let mut j = 0;
-        while j < 3 {
-            output[i] += m[i][j] * v[j];
-            j += 1;
-        }
-        i += 1;
-    }
-    output
-}
-
-const ROT_NOP: Rot = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-
-const ROT_X: Rot = [[1, 0, 0], [0, 0, 1], [0, -1, 0]];
-const ROT_XX: Rot = mat_x_mat(ROT_X, ROT_X);
-const ROT_XXX: Rot = mat_x_mat(ROT_XX, ROT_X);
-
-const ROT_UP: Rot = [[0, 0, 1], [0, 1, 0], [-1, 0, 0]];
-const ROT_BEHIND: Rot = mat_x_mat(ROT_UP, ROT_UP);
-const ROT_DOWN: Rot = mat_x_mat(ROT_BEHIND, ROT_UP);
-const ROT_RIGHT: Rot = [[0, 1, 0], [-1, 0, 0], [0, 0, 1]];
-const ROT_LEFT: Rot = mat_x_mat(ROT_BEHIND, ROT_RIGHT);
-
-const ROTS_X: [Rot; 4] = [ROT_NOP, ROT_X, ROT_XX, ROT_XXX];
-const ROTS_AXIS: [Rot; 6] = [ROT_NOP, ROT_UP, ROT_DOWN, ROT_BEHIND, ROT_LEFT, ROT_RIGHT];
+const NOP: Rot = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+const ROLL: Rot = [[0, 0, 1], [0, 1, 0], [-1, 0, 0]];
+const TURN_CW: Rot = [[1, 0, 0], [0, 0, -1], [0, 1, 0]];
+const TURN_CCW: Rot = [[1, 0, 0], [0, 0, 1], [0, -1, 0]];
+const TURNS: [Rot; 2] = [TURN_CW, TURN_CCW];
 
 const ROTS: [Rot; 24] = {
-    let mut rots = [ROT_NOP; 24];
-    let mut i = 0;
-    while i < 6 {
-        let mut j = 0;
-        while j < 4 {
-            rots[i * 4 + j] = mat_x_mat(ROTS_X[j], ROTS_AXIS[i]);
-            j += 1;
+    let mut m = NOP;
+    let mut rots = [NOP; 24];
+    let mut ri = 0;
+    while ri < 6 {
+        m = combine_rots(m, ROLL);
+        rots[ri * 4] = m;
+        let mut ti = 0;
+        while ti < 3 {
+            m = combine_rots(m, TURNS[ri % 2]);
+            rots[ri * 4 + ti + 1] = m;
+            ti += 1;
         }
-        i += 1;
+        ri += 1;
     }
     rots
 };
@@ -100,7 +72,7 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], HashSet<[i16; 3]>)> {
             ROTS.map(|rot| {
                 points
                     .iter()
-                    .map(|&p| mat_x_vet(rot, p))
+                    .map(|&p| rot.map(|l| l.into_iter().zip(p).map(|(m, v)| m * v).sum::<i16>()))
                     .collect::<Vec<_>>()
             })
         })
