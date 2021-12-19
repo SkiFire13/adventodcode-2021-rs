@@ -93,23 +93,17 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], HashSet<[i16; 3]>)> {
                     .flat_map(|points| points[11..].par_iter().map(move |point| (points, point)))
                     .find_map_any(|(points, point)| {
                         let candidates = &found[j].as_ref().unwrap().1;
-                        for &candidate in candidates.iter().take(candidates.len() - 11) {
-                            let root = [
-                                candidate[0] - point[0],
-                                candidate[1] - point[1],
-                                candidate[2] - point[2],
-                            ];
-                            let num_intersections = points
+                        for &cand in candidates.iter().take(candidates.len() - 11) {
+                            let root = [cand[0] - point[0], cand[1] - point[1], cand[2] - point[2]];
+                            let mapped_points = points
                                 .iter()
-                                .map(|&p| [p[0] + root[0], p[1] + root[1], p[2] + root[2]])
+                                .map(|&p| [p[0] + root[0], p[1] + root[1], p[2] + root[2]]);
+                            let num_intersections = mapped_points
+                                .clone()
                                 .filter(|p| candidates.contains(p))
                                 .count();
                             if num_intersections >= 12 {
-                                let points = points
-                                    .iter()
-                                    .map(|&p| [p[0] + root[0], p[1] + root[1], p[2] + root[2]])
-                                    .collect();
-                                return Some((root, points));
+                                return Some((root, mapped_points.collect()));
                             }
                         }
                         None
