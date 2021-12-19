@@ -115,8 +115,11 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], HashSet<[i16; 3]>)> {
                 if found[j].is_none() || replace(&mut visited[(i, j)], true) {
                     continue 'j;
                 }
-                for points in &rotated_points[i] {
-                    for point in &points[11..] {
+
+                found[i] = rotated_points[i]
+                    .par_iter()
+                    .flat_map(|points| points[11..].par_iter().map(move |point| (points, point)))
+                    .find_map_any(|(points, point)| {
                         let candidates = &found[j].as_ref().unwrap().1;
                         for &candidate in candidates.iter().take(candidates.len() - 11) {
                             let root = [
@@ -134,13 +137,13 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], HashSet<[i16; 3]>)> {
                                     .iter()
                                     .map(|&p| [p[0] + root[0], p[1] + root[1], p[2] + root[2]])
                                     .collect();
-                                found[i] = Some((root, points));
-                                num_found += 1;
-                                continue 'i;
+                                return Some((root, points));
                             }
                         }
-                    }
-                }
+                        None
+                    });
+                found[i].is_some().then(|| num_found += 1);
+                continue 'i;
             }
         }
     }
