@@ -7,11 +7,24 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 fn best_path(input: &Input) -> u16 {
-    let mut queue = BinaryHeap::from([Reverse((0, input.w() as u16 - 1, input.h() as u16 - 1))]);
+    #[ord_by_key(|e| e.risk)]
+    struct Entry {
+        risk: u16,
+        x: u16,
+        y: u16,
+    }
+
+    let initial_entry = Entry {
+        risk: 0,
+        x: input.w() as u16 - 1,
+        y: input.h() as u16 - 1,
+    };
+    let mut queue = BinaryHeap::from([Reverse(initial_entry)]);
     let mut seen = input.map_ref(|_, _, _| false);
 
-    while let Some(Reverse((risk, x, y))) = queue.pop() {
-        let (x, y) = (x as usize, y as usize);
+    while let Some(Reverse(entry)) = queue.pop() {
+        let risk = entry.risk;
+        let (x, y) = (entry.x as usize, entry.y as usize);
         if (x, y) == (0, 0) {
             return risk;
         }
@@ -21,7 +34,8 @@ fn best_path(input: &Input) -> u16 {
                 input
                     .plus_neighbours((x, y))
                     .filter(|&(nx, ny)| !seen[(nx, ny)])
-                    .map(|(nx, ny)| Reverse((risk, nx as u16, ny as u16))),
+                    .map(|(nx, ny)| (nx as u16, ny as u16))
+                    .map(|(x, y)| Reverse(Entry { risk, x, y }))
             );
         }
     }
