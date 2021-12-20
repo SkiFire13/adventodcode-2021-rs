@@ -21,19 +21,8 @@ fn enhance(pattern: &[bool], image: &mut Grid<bool>, new_image: &mut Grid<bool>,
         })
         .for_each(|(x, y, elm)| {
             let (x, y) = (x as isize, y as isize);
-            let arr = [
-                image.iget((x - 1, y - 1)),
-                image.iget((x, y - 1)),
-                image.iget((x + 1, y - 1)),
-                image.iget((x - 1, y)),
-                image.iget((x, y)),
-                image.iget((x + 1, y)),
-                image.iget((x - 1, y + 1)),
-                image.iget((x, y + 1)),
-                image.iget((x + 1, y + 1)),
-            ];
-            let pos = arr
-                .into_iter()
+            let pos = itertools::iproduct!(-1..2, -1..2)
+                .map(|(dy, dx)| image.iget((x + dx, y + dy)))
                 .map(|b| b.copied().unwrap_or(ext))
                 .fold(0, |acc, b| (acc << 1) | (b as usize));
             *elm = pattern[pos];
