@@ -56,7 +56,9 @@ const ROTS: [Rot; 24] = {
     rots
 };
 
-fn resolve_positions(input: &Input) -> Vec<([i16; 3], Vec<[i16; 3]>)> {
+type ResolvedPositions = Vec<([i16; 3], Vec<[i16; 3]>)>;
+
+fn resolve_positions(input: &Input) -> ResolvedPositions {
     let mut num_found = 1;
     let mut found = vec![None; input.len()];
     found[0] = Some(([0; 3], input[0].clone()));
@@ -137,16 +139,21 @@ fn resolve_positions(input: &Input) -> Vec<([i16; 3], Vec<[i16; 3]>)> {
     found.into_iter().map(Option::unwrap).collect()
 }
 
+static PERSISTANT: Lazy<Mutex<Option<ResolvedPositions>>> = Lazy::new(|| Mutex::new(None));
+
 pub fn part1(input: &Input) -> usize {
-    resolve_positions(input)
-        .into_iter()
-        .flat_map(|(_, beacons)| beacons.into_iter())
+    let mut resolved_positions = PERSISTANT.lock();
+    let resolved_positions = resolved_positions.insert(resolve_positions(input));
+    resolved_positions
+        .iter()
+        .flat_map(|(_, beacons)| beacons.iter().copied())
         .unique()
         .count()
 }
 
 pub fn part2(input: &Input) -> i16 {
-    let found = resolve_positions(input);
+    let resolved_positions = PERSISTANT.lock();
+    let found = resolved_positions.as_ref().expect("Part 1 didn't run");
     (0..input.len())
         .flat_map(|i| (i + 1..input.len()).map(move |j| (i, j)))
         .map(|(i, j)| (found[i].0, found[j].0))
