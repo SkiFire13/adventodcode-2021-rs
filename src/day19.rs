@@ -110,9 +110,9 @@ fn resolve_positions(input: &Input) -> ResolvedPositions {
                     continue 'j;
                 }
 
-                found[i] = rotated_points[i]
-                    .par_iter()
-                    .flat_map(|points| points[11..].par_iter().map(move |point| (points, point)))
+                found[i] = (11..rotated_points[i][0].len())
+                    .into_par_iter()
+                    .flat_map(|point_idx| rotated_points[i].par_iter().map(move |points| (points, points[point_idx])))
                     .find_map_any(|(points, point)| {
                         let candidates = &found[j].as_ref().unwrap().1;
                         for &cand in candidates.iter().take(candidates.len() - 11) {
