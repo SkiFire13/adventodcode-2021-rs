@@ -22,4 +22,5 @@ aoc_helper::main!(2021 =>
     day18,
     day19,
     day20,
+    day21,
 );
