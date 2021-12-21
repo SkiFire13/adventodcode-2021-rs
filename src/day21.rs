@@ -8,23 +8,20 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 pub fn part1(input: &Input) -> u32 {
-    let (mut p1pos, mut p2pos) = *input;
+    let (mut p1pos, mut p2pos) = (input.0 - 1, input.1 - 1);
     let (mut p1score, mut p2score) = (0, 0);
-    let mut next_roll = 1;
     let mut rolls = 0;
 
     loop {
-        p1pos = (p1pos + (3 * next_roll + 3) - 1) % 10 + 1;
-        p1score += p1pos;
-        next_roll = (next_roll + 3) % 10;
+        p1pos = (p1pos + (3 * rolls + 6)) % 10;
+        p1score += p1pos + 1;
         rolls += 3;
         if p1score >= 1000 {
             return p2score * rolls;
         }
 
-        p2pos = (p2pos + (3 * next_roll + 3) - 1) % 10 + 1;
-        p2score += p2pos;
-        next_roll = (next_roll + 3) % 10;
+        p2pos = (p2pos + (3 * rolls + 6)) % 10;
+        p2score += p2pos + 1;
         rolls += 3;
         if p2score >= 1000 {
             return p1score * rolls;
