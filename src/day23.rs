@@ -78,6 +78,7 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
         state: input,
     });
     while let Some(Entry { cost, state }) = queue.pop() {
+        let (mut cost, mut state) = (cost, state);
         if !seen.insert(state.clone()) {
             continue;
         }
@@ -86,7 +87,37 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
             return cost;
         }
 
+        let before = state.clone();
+        'l: loop {
+            'i: for (idx, c, x, y) in state.clone().enumerate() {
+                if x == 2 * (c + 1)
+                    || state.any(|fc, fx, _| fc != c && fx == 2 * (c + 1))
+                    || (x % 2 == 0 && state.any(|_, fx, fy| fx == x && fy < y))
+                {
+                    continue 'i;
+                }
+                let xtarg = 2 * (c + 1);
+                let mut range = if x < xtarg { x + 1..xtarg } else { xtarg..x };
+                if !range.any(|x| state.any(|_, fx, fy| x == fx && fy == 0)) {
+                    let dx = if x < xtarg { xtarg - x } else { x - xtarg };
+                    let count = state.count(|_, fx, _| fx == xtarg);
+                    cost += (y + dx + depth - count) as u32 * 10u32.pow(c as u32);
+                    state = state.with(idx, xtarg, depth - count);
+                    continue 'l;
+                }
+            }
+            break 'l;
+        }
+        if state != before && !state.any(|c, x, _| x != 2 * (c + 1)) {
+            queue.push(Entry { cost, state });
+            continue;
+        }
+
         'c: for (idx, c, x, y) in state.enumerate() {
+            if y == 0 {
+                continue 'c;
+            }
+
             if x == 2 * (c + 1) {
                 if state.count(|fc, fx, fy| fc == c && fx == x && fy > y) == depth - y {
                     continue 'c;
@@ -99,28 +130,15 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
 
             let mut move_to_x = |xtarg| {
                 let dx = if x < xtarg { xtarg - x } else { x - xtarg };
-                if xtarg == 2 * (c + 1) {
-                    if !state.any(|ac, ax, _| ac != c && ax == xtarg) {
-                        let count = state.count(|_, fx, _| fx == xtarg);
-                        let cost = cost + (y + dx + depth - count) as u32 * 10u32.pow(c as u32);
-                        let state = state.with(idx, xtarg, depth - count);
-                        queue.push(Entry { cost, state });
-                    }
-                    if y == 0 {
-                        return ControlFlow::Break(());
-                    }
-                }
                 if matches!(xtarg, 2 | 4 | 6 | 8) {
                     return ControlFlow::Continue(());
                 }
                 if state.any(|_, ax, _| ax == xtarg) {
                     return ControlFlow::Break(());
                 }
-                if y != 0 {
-                    let cost = cost + (y + dx) as u32 * 10u32.pow(c as u32);
-                    let state = state.with(idx, xtarg, 0);
-                    queue.push(Entry { cost, state });
-                }
+                let cost = cost + (y + dx) as u32 * 10u32.pow(c as u32);
+                let state = state.with(idx, xtarg, 0);
+                queue.push(Entry { cost, state });
                 ControlFlow::Continue(())
             };
 
