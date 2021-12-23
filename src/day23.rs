@@ -16,31 +16,49 @@ pub fn input_generator(input: &str) -> Input {
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct State<const DEPTH: usize> {
-    inner: Box<[(u8, u8, u8)]>
+    inner: [[(u8, u8); DEPTH]; 4],
 }
 
 impl<const DEPTH: usize> State<DEPTH> {
-    fn from_vec(mut v: Vec<(u8, u8, u8)>) -> Self {
-        v.sort_unstable();
-        Self { inner: v.into_boxed_slice() }
+    fn iter(&self) -> impl Iterator<Item = (u8, u8, u8)> + '_ {
+        self.inner
+            .into_iter()
+            .enumerate()
+            .flat_map(|(c, inner)| inner.into_iter().map(move |(x, y)| (c as u8, x, y)))
+    }
+    fn from_vec(v: Vec<(u8, u8, u8)>) -> Self {
+        let mut inner = [[(u8::MAX, u8::MAX); DEPTH]; 4];
+        for (c, x, y) in v.into_iter() {
+            let mut idx = 0;
+            while inner[c as usize][idx] != (u8::MAX, u8::MAX) {
+                idx += 1;
+            }
+            inner[c as usize][idx] = (x, y);
+        }
+        Self { inner }
     }
     fn to_vec(&self) -> Vec<(u8, u8, u8)> {
-        self.inner.to_vec()
+        self.iter().collect()
     }
     fn with(&self, idx: usize, x: u8, y: u8) -> Self {
         let mut state = self.clone();
-        state.inner[idx] = (self.inner[idx].0, x, y);
-        state.inner.sort_unstable();
+        state.inner[idx / DEPTH][idx % DEPTH] = (x, y);
+        state
+            .inner
+            .iter_mut()
+            .for_each(|inner| inner.sort_unstable());
         state
     }
     fn enumerate(&self) -> impl Iterator<Item = (usize, u8, u8, u8)> + '_ {
-        self.inner.iter().enumerate().map(|(idx, &(c, x, y))| (idx, c, x, y))
+        self.iter()
+            .enumerate()
+            .map(|(idx, (c, x, y))| (idx, c, x, y))
     }
     fn any(&self, mut f: impl FnMut(u8, u8, u8) -> bool) -> bool {
-        self.inner.iter().any(|&(c, x, y)| f(c, x, y))
+        self.iter().any(|(c, x, y)| f(c, x, y))
     }
     fn count(&self, mut f: impl FnMut(u8, u8, u8) -> bool) -> u8 {
-        self.inner.iter().filter(|&&(c, x, y)| f(c, x, y)).count() as u8
+        self.iter().filter(|&(c, x, y)| f(c, x, y)).count() as u8
     }
 }
 
@@ -55,18 +73,21 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
 
     let mut queue = BinaryHeap::new();
     let mut seen = HashSet::new();
-    queue.push(Entry { cost: 0, state: input });
+    queue.push(Entry {
+        cost: 0,
+        state: input,
+    });
     while let Some(Entry { cost, state }) = queue.pop() {
         if !seen.insert(state.clone()) {
             continue;
         }
 
-        if !state.any(|c, x, _| x != 2*(c+1)) {
+        if !state.any(|c, x, _| x != 2 * (c + 1)) {
             return cost;
         }
 
         'c: for (idx, c, x, y) in state.enumerate() {
-            if x == 2*(c+1) {
+            if x == 2 * (c + 1) {
                 if state.count(|fc, fx, fy| fc == c && fx == x && fy > y) == depth - y {
                     continue 'c;
                 }
@@ -76,10 +97,9 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
                 continue 'c;
             }
 
-            use std::ops::ControlFlow;
             let mut move_to_x = |xtarg| {
                 let dx = if x < xtarg { xtarg - x } else { x - xtarg };
-                if xtarg == 2*(c+1) {
+                if xtarg == 2 * (c + 1) {
                     if !state.any(|ac, ax, _| ac != c && ax == xtarg) {
                         let count = state.count(|_, fx, _| fx == xtarg);
                         let cost = cost + (y + dx + depth - count) as u32 * 10u32.pow(c as u32);
@@ -105,7 +125,7 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
             };
 
             (0..x).rev().try_for_each(&mut move_to_x);
-            (x+1..11).try_for_each(&mut move_to_x);
+            (x + 1..11).try_for_each(&mut move_to_x);
         }
     }
     panic!();
@@ -117,8 +137,14 @@ pub fn part1(input: &Input) -> u32 {
 
 pub fn part2(input: &Input) -> u32 {
     let mut input = input.to_vec();
-    input.iter_mut().filter(|(_, _, y)| *y == 2).for_each(|(_, _, y)| *y += 2);
-    for (y, l) in [['D', 'C', 'B', 'A'], ['D', 'B', 'A', 'C']].into_iter().enumerate() {
+    input
+        .iter_mut()
+        .filter(|(_, _, y)| *y == 2)
+        .for_each(|(_, _, y)| *y += 2);
+    for (y, l) in [['D', 'C', 'B', 'A'], ['D', 'B', 'A', 'C']]
+        .into_iter()
+        .enumerate()
+    {
         for (x, c) in l.into_iter().enumerate() {
             input.push((c as u8 - b'A', 2 * (x + 1) as u8, 2 + y as u8))
         }
