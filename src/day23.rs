@@ -62,11 +62,24 @@ impl<const DEPTH: usize> State<DEPTH> {
     }
 }
 
+fn star_add<const DEPTH: usize>(state: &State<DEPTH>) -> u32 {
+    let mut star = 0;
+    for (_, c, x, y) in state.enumerate() {
+        let xtarg = 2 * (c + 1);
+        if x != xtarg {
+            let dx = if x < xtarg { xtarg - x } else { x - xtarg};
+            star += (y + dx + 1) as u32 * 10u32.pow(c as u32);
+        }
+    }
+    star
+}
+
 fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
     let depth = DEPTH as u8;
 
-    #[ord_by_key(|this| Reverse(this.cost))]
+    #[ord_by_key(|this| Reverse(this.star))]
     struct Entry<const DEPTH: usize> {
+        star: u32,
         cost: u32,
         state: State<DEPTH>,
     }
@@ -74,10 +87,11 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
     let mut queue = BinaryHeap::new();
     let mut seen = HashSet::new();
     queue.push(Entry {
+        star: star_add(&input),
         cost: 0,
         state: input,
     });
-    while let Some(Entry { cost, state }) = queue.pop() {
+    while let Some(Entry { star: _, cost, state }) = queue.pop() {
         let (mut cost, mut state) = (cost, state);
         if !seen.insert(state.clone()) {
             continue;
@@ -109,7 +123,8 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
             break 'l;
         }
         if state != before && !state.any(|c, x, _| x != 2 * (c + 1)) {
-            queue.push(Entry { cost, state });
+            let star = cost + star_add(&state);
+            queue.push(Entry { star, cost, state });
             continue;
         }
 
@@ -138,7 +153,8 @@ fn smallest_cost<const DEPTH: usize>(input: State<DEPTH>) -> u32 {
                 }
                 let cost = cost + (y + dx) as u32 * 10u32.pow(c as u32);
                 let state = state.with(idx, xtarg, 0);
-                queue.push(Entry { cost, state });
+                let star = cost + star_add(&state);
+                queue.push(Entry { star, cost, state });
                 ControlFlow::Continue(())
             };
 
