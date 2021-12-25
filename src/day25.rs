@@ -12,31 +12,45 @@ pub fn part1(input: &Input) -> usize {
     let mut i = 0;
     let mut moved = true;
     while moved {
-        let mut next = grid.clone();
-
         moved = false;
-        for (y, x) in itertools::iproduct!(0..grid.h(), 0..grid.w()) {
-            if grid[(x, y)] == b'>' {
-                if grid[((x + 1) % w, y)] == b'.' {
-                    next[(x, y)] = b'.';
-                    next[((x + 1) % w, y)] = b'>';
+        for y in 0..h {
+            let first_occupied = grid[(0, y)] != b'.';
+            let mut x = 0;
+            while x < w - 1 {
+                if grid[(x, y)] == b'>' && grid[(x + 1, y)] == b'.' {
+                    grid[(x, y)] = b'.';
+                    grid[(x + 1, y)] = b'>';
+                    x += 2;
                     moved = true;
+                } else {
+                    x += 1;
                 }
             }
-        }
-        grid = next;
-        let mut next = grid.clone();
-
-        for (x, y) in itertools::iproduct!(0..grid.w(), 0..grid.h()) {
-            if grid[(x, y)] == b'v' {
-                if grid[(x, (y + 1) % h)] == b'.' {
-                    next[(x, y)] = b'.';
-                    next[(x, (y + 1) % h)] = b'v';
-                    moved = true;
-                }
+            if x == w - 1 && grid[(w-1, y)] == b'>' && !first_occupied {
+                grid[(w-1, y)] = b'.';
+                grid[(0, y)] = b'>';
+                moved = true;
             }
         }
-        grid = next;
+        for x in 0..w {
+            let first_occupied = grid[(x, 0)] != b'.';
+            let mut y = 0;
+            while y < h - 1 {
+                if grid[(x, y)] == b'v' && grid[(x, y + 1)] == b'.' {
+                    grid[(x, y)] = b'.';
+                    grid[(x, y + 1)] = b'v';
+                    y += 2;
+                    moved = true;
+                } else {
+                    y += 1;
+                }
+            }
+            if y == h - 1 && grid[(x, h-1)] == b'v' && !first_occupied {
+                grid[(x, h-1)] = b'.';
+                grid[(x, 0)] = b'v';
+                moved = true;
+            }
+        }
         i += 1;
     }
     i
